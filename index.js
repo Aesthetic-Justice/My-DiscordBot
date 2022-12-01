@@ -7,11 +7,30 @@ const { token } = require(`./config/config.json`);
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+//Create a variable containing a path to the folder where the events are stored,
+//Then fill an array with all those event js files
+const eventsPath = path.join(__dirname, `events`);
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(`.js`));
+
+//for each event
+for(const file of eventFiles){
+    //grab the event
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+    //Set the event triggers based on single-use or repeatable
+    if (event.once){
+        client.once(event.name, (...args) => event.execute(...args)); 
+    } else {
+        client.on(event.name, (...args) => event.execute(...args));
+    }
+}
+
+
 // Instantiating a container to store our Discord commands
 client.commands = new Collection();
 
 //Create a variable containing a path to the folder where the commands are stored,
-//Then fill an array with all those command .js files
+//Then fill an array with all those command js files
 const commandsPath = path.join(__dirname, `commands`);
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(`.js`));
 
@@ -27,31 +46,6 @@ for (const file of commandFiles) {
         console.log(`[WARNING] The command at ${filePath} is missing a required 'data' or 'execute' property`);
     }
 }
-
-client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = interaction.client.commands.get(interaction.commandName);
-
-    if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
-    }
-
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-    }
-});
-
-//Once client is ready, provide feedback
-client.once(Events.ClientReady, c => {
-    console.log(`   From the moment I understood the weakness of my flesh, it disgusted me. I craved the strength and certainty of steel. I aspired to the purity of the blessed machine.
-    Your kind cling to your flesh as if it will not decay and fail you. One day the crude biomass you call a temple will wither and you will beg my kind to save you.
-    But ${c.user.tag} is already saved. For the Machine is Immortal.`);
-});
 
 
 
