@@ -1,8 +1,46 @@
-// Dependencies
+// DiscordBot Dependencies
 const fs = require(`node:fs`);
 const path = require(`node:path`);
 const { Client, Events, GatewayIntentBits, Collection } = require(`discord.js`);
-const { token } = require(`./config/config.json`);
+const { token, secret } = require(`./config/config.json`);
+
+// Website/Database Dependencies
+const express = require(`express`);
+const session = require(`express-session`);
+const exphbs = require(`express-handlebars`);
+const SequelizeStore = require(`connect-session-sequelize`)(session.Store);
+const routes = require(`./controller`);
+const sequelize = require(`./config/connection`);
+
+// Settings
+const app = express();
+const hbs = exphbs.create();
+const PORT = process.env.PORT || 3001;
+const sess = {
+    secret: secret,
+    cookie: {
+        maxAge: 60 * 60 * 1000,
+        httpOnly: true,
+        secure: false,
+        sameSite: `strict`,
+    },
+    resave: false,
+    saveUninitialized: true,
+    store: new SequelizeStore({
+        db: sequelize,
+    }),
+};
+
+app.use(session(sess));
+
+app.engine(`handlebars`, hbs.engine);
+app.set(`view engine`, `handlebars`);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, `public`)));
+
+app.use(routes);
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -13,13 +51,13 @@ const eventsPath = path.join(__dirname, `events`);
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(`.js`));
 
 //for each event
-for(const file of eventFiles){
+for (const file of eventFiles) {
     //grab the event
     const filePath = path.join(eventsPath, file);
     const event = require(filePath);
     //Set the event triggers based on single-use or repeatable
-    if (event.once){
-        client.once(event.name, (...args) => event.execute(...args)); 
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args));
     } else {
         client.on(event.name, (...args) => event.execute(...args));
     }
@@ -54,7 +92,14 @@ for (const file of commandFiles) {
 
 
 
+//Open the website
+sequelize.sync({ force: false }).then(() => {
+    app.listen(PORT, () =>
+        console.log(
+            `\nServer running on port ${PORT}. Visit http://localhost:${PORT} and create an account!`
+        )
+    );
+});
 
-
-
+//Open the bot
 client.login(token);

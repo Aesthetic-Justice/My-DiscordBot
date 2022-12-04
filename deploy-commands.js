@@ -21,16 +21,16 @@ const rest = new REST({ version: '10' }).setToken(token);
 		console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
 		// The put method is used to fully refresh all commands globally with the current set
-/* 		await rest.put(
+		const data = await rest.put(
 			Routes.applicationCommands(clientId),
 			{ body: commands },
-		); */
+		);
 
 		//Local Deploy(to my personal discord)
-		const data = await rest.put(
+/* 		const data = await rest.put(
 			Routes.applicationGuildCommands(clientId, guildId),
 			{ body: commands },
-		);
+		); */
 
 		console.log(`Successfully reloaded ${data.length} application (/) commands.`);
 	} catch (error) {
