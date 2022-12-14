@@ -1,6 +1,8 @@
 {
     "token":"",
+    "BotLink":"",
     "clientId": "",
 	"guildId": "",
-    "publicId": ""
+    "publicId": "",
+    "secret": ""
 }
